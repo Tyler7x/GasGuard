@@ -1,8 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../../src/app.module';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication } from "@nestjs/common";
+import { AppModule } from "../../src/app.module";
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const execPromise = promisify(exec);
 
@@ -14,7 +14,7 @@ export class TestEnvironment {
     // Start test environment
     await this.startHardhatNode();
     await this.setupDatabase();
-    
+
     // Create NestJS app
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -22,7 +22,7 @@ export class TestEnvironment {
 
     this.app = moduleFixture.createNestApplication();
     await this.app.init();
-    
+
     return this.app;
   }
 
@@ -30,29 +30,29 @@ export class TestEnvironment {
     if (this.app) {
       await this.app.close();
     }
-    
+
     if (this.hardhatProcess) {
       this.hardhatProcess.kill();
     }
-    
+
     await this.cleanupDatabase();
   }
 
   private async startHardhatNode(): Promise<void> {
     // Start Hardhat node for blockchain testing
-    console.log('Starting Hardhat node...');
+    console.log("Starting Hardhat node...");
     // Implementation would start Hardhat process
   }
 
   private async setupDatabase(): Promise<void> {
     // Setup test database
-    console.log('Setting up test database...');
+    console.log("Setting up test database...");
     // Implementation would reset/create test database
   }
 
   private async cleanupDatabase(): Promise<void> {
     // Cleanup test database
-    console.log('Cleaning up test database...');
+    console.log("Cleaning up test database...");
     // Implementation would drop test database
   }
 
@@ -68,13 +68,13 @@ export const createTestApp = async (): Promise<INestApplication> => {
 
 export const cleanupTestApp = async (app: INestApplication): Promise<void> => {
   const testEnv = new TestEnvironment();
-  // @ts-ignore - accessing private property for cleanup
-  testEnv['app'] = app;
+  // @ts-expect-error - accessing private property for cleanup
+  testEnv["app"] = app;
   await testEnv.teardown();
 };
 
 // Test data generators
-export const generateTestContract = (name: string = 'TestContract'): string => {
+export const generateTestContract = (name: string = "TestContract"): string => {
   return `
 use soroban_sdk::{contract, contractimpl, contracttype, Address, Env};
 
@@ -127,35 +127,37 @@ impl BadContract {
 // Performance testing utilities
 export const measurePerformance = async <T>(
   operation: () => Promise<T>,
-  iterations: number = 10
+  iterations: number = 10,
 ): Promise<{ average: number; min: number; max: number }> => {
   const times: number[] = [];
-  
+
   for (let i = 0; i < iterations; i++) {
     const start = Date.now();
     await operation();
     const end = Date.now();
     times.push(end - start);
   }
-  
+
   return {
     average: times.reduce((a, b) => a + b, 0) / times.length,
     min: Math.min(...times),
-    max: Math.max(...times)
+    max: Math.max(...times),
   };
 };
 
 // Mock data generators
 export const generateMockTransaction = () => ({
   merchantId: `merchant-${Math.random().toString(36).substr(2, 9)}`,
-  to: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-  value: '1000000000000000000',
-  data: '0x',
-  gasLimit: '21000'
+  to: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+  value: "1000000000000000000",
+  data: "0x",
+  gasLimit: "21000",
 });
 
-export const generateMockBatch = (count: number = 5) => 
-  Array(count).fill(null).map((_, i) => ({
-    code: generateTestContract(`BatchContract${i}`),
-    source: `batch-${i}.rs`
-  }));
+export const generateMockBatch = (count: number = 5) =>
+  Array(count)
+    .fill(null)
+    .map((_, i) => ({
+      code: generateTestContract(`BatchContract${i}`),
+      source: `batch-${i}.rs`,
+    }));

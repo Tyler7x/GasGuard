@@ -158,7 +158,7 @@ impl SorobanAnalyzer {
                 violations.push(RuleViolation {
                     rule_name: "inefficient-integer-type".to_string(),
                     description: format!("Field '{}' uses {} which may be unnecessarily large", field.name, field.type_name),
-                    suggestion: "Consider using a smaller integer type like u64 or u32 if the range permits".to_string(),
+                    suggestion: format!("Consider using a smaller integer type like u64 or u32 if the range permits for field '{}'", field.name),
                     line_number: field.line_number,
                     column_number: 0,
                     variable_name: field.name.clone(),
@@ -473,7 +473,7 @@ impl GoodContract {
         // Well-optimized contract should have minimal violations
         // Most should be informational rather than critical
         let critical_violations: Vec<_> = violations.iter()
-            .filter(|v| matches!(v.severity, ViolationSeverity::High | ViolationSeverity::Error))
+            .filter(|v| matches!(v.severity, ViolationSeverity::High | ViolationSeverity::Critical))
             .collect();
         
         assert!(critical_violations.is_empty() || critical_violations.len() <= 1);

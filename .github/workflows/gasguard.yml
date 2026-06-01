@@ -1,0 +1,30 @@
+name: GasGuard Contract Scanning
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  scan:
+    name: GasGuard Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GasGuard
+        run: |
+          cargo install --path apps/api --bin gasguard
+
+      - name: Run GasGuard Scan
+        run: |
+          gasguard scan-dir . --format json > gasguard-report.json
+
+      - name: Upload Scan Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gasguard-scan-report
+          path: gasguard-report.json
+          retention-days: 30

@@ -1,17 +1,15 @@
 /// <reference types="jest" />
-// @ts-nocheck
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { DynamicPricingService } from '../services/dynamic-pricing.service';
-import { NetworkMonitorService } from '../services/network-monitor.service';
-import { GasPriceHistoryService } from '../services/gas-price-history.service';
-import { GasEstimationController } from '../gas-estimation.controller';
-import { GasPriceHistory } from '../entities/gas-price-history.entity';
+import { Test, TestingModule } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { DynamicPricingService } from "../services/dynamic-pricing.service";
+import { NetworkConfigService } from "../config/network-config.service";
+import { NetworkMonitorService } from "../services/network-monitor.service";
+import { GasPriceHistoryService } from "../services/gas-price-history.service";
+import { GasEstimationController } from "../gas-estimation.controller";
+import { GasPriceHistory } from "../entities/gas-price-history.entity";
 
-describe('Dynamic Gas Estimation Engine', () => {
+describe("Dynamic Gas Estimation Engine", () => {
   let controller: GasEstimationController;
   let dynamicPricingService: DynamicPricingService;
   let networkMonitorService: NetworkMonitorService;
@@ -23,6 +21,7 @@ describe('Dynamic Gas Estimation Engine', () => {
       controllers: [GasEstimationController],
       providers: [
         DynamicPricingService,
+        NetworkConfigService,
         NetworkMonitorService,
         GasPriceHistoryService,
         {
@@ -38,14 +37,22 @@ describe('Dynamic Gas Estimation Engine', () => {
     }).compile();
 
     controller = module.get<GasEstimationController>(GasEstimationController);
-    dynamicPricingService = module.get<DynamicPricingService>(DynamicPricingService);
-    networkMonitorService = module.get<NetworkMonitorService>(NetworkMonitorService);
-    gasPriceHistoryService = module.get<GasPriceHistoryService>(GasPriceHistoryService);
-    repository = module.get<Repository<GasPriceHistory>>(getRepositoryToken(GasPriceHistory));
+    dynamicPricingService = module.get<DynamicPricingService>(
+      DynamicPricingService,
+    );
+    networkMonitorService = module.get<NetworkMonitorService>(
+      NetworkMonitorService,
+    );
+    gasPriceHistoryService = module.get<GasPriceHistoryService>(
+      GasPriceHistoryService,
+    );
+    repository = module.get<Repository<GasPriceHistory>>(
+      getRepositoryToken(GasPriceHistory),
+    );
   });
 
-  describe('Dynamic Pricing Service', () => {
-    it('should calculate surge multiplier correctly for low congestion', async () => {
+  describe("Dynamic Pricing Service", () => {
+    it("should calculate surge multiplier correctly for low congestion", async () => {
       // Mock low congestion
       const metrics = {
         congestionLevel: 20,
@@ -59,13 +66,13 @@ describe('Dynamic Gas Estimation Engine', () => {
       };
 
       jest
-        .spyOn(networkMonitorService, 'getNetworkMetrics')
+        .spyOn(networkMonitorService, "getNetworkMetrics")
         .mockResolvedValue(metrics);
 
       const estimate = await dynamicPricingService.estimateGasPrice(
-        'soroban-testnet',
+        "soroban-testnet",
         100000,
-        'normal'
+        "normal",
       );
 
       // Low congestion should have minimal surge (1.0x base)
@@ -73,7 +80,7 @@ describe('Dynamic Gas Estimation Engine', () => {
       expect(estimate.dynamicGasPrice).toBeGreaterThan(0);
     });
 
-    it('should increase surge multiplier for high congestion', async () => {
+    it("should increase surge multiplier for high congestion", async () => {
       // Mock high congestion
       const metrics = {
         congestionLevel: 75,
@@ -87,50 +94,54 @@ describe('Dynamic Gas Estimation Engine', () => {
       };
 
       jest
-        .spyOn(networkMonitorService, 'getNetworkMetrics')
+        .spyOn(networkMonitorService, "getNetworkMetrics")
         .mockResolvedValue(metrics);
 
       const estimate = await dynamicPricingService.estimateGasPrice(
-        'soroban-testnet',
+        "soroban-testnet",
         100000,
-        'normal'
+        "normal",
       );
 
       // High congestion should have significant surge (> 2.0x)
       expect(estimate.surgeMultiplier).toBeGreaterThan(2.0);
     });
 
-    it('should apply priority multipliers correctly', async () => {
+    it("should apply priority multipliers correctly", async () => {
       const baseEstimate = await dynamicPricingService.estimateGasPrice(
-        'soroban-testnet',
+        "soroban-testnet",
         100000,
-        'normal'
+        "normal",
       );
 
       const lowEstimate = await dynamicPricingService.estimateGasPrice(
-        'soroban-testnet',
+        "soroban-testnet",
         100000,
-        'low'
+        "low",
       );
 
       const highEstimate = await dynamicPricingService.estimateGasPrice(
-        'soroban-testnet',
+        "soroban-testnet",
         100000,
-        'high'
+        "high",
       );
 
       // Low should be cheaper than normal
-      expect(lowEstimate.dynamicGasPrice).toBeLessThan(baseEstimate.dynamicGasPrice);
+      expect(lowEstimate.dynamicGasPrice).toBeLessThan(
+        baseEstimate.dynamicGasPrice,
+      );
 
       // High should be more expensive than normal
-      expect(highEstimate.dynamicGasPrice).toBeGreaterThan(baseEstimate.dynamicGasPrice);
+      expect(highEstimate.dynamicGasPrice).toBeGreaterThan(
+        baseEstimate.dynamicGasPrice,
+      );
     });
 
-    it('should apply safety margin to all prices', async () => {
+    it("should apply safety margin to all prices", async () => {
       const estimate = await dynamicPricingService.estimateGasPrice(
-        'soroban-testnet',
+        "soroban-testnet",
         100000,
-        'normal'
+        "normal",
       );
 
       // Safety margin of 1.15 should be applied
@@ -141,28 +152,34 @@ describe('Dynamic Gas Estimation Engine', () => {
       expect(estimate.dynamicGasPrice).toBeCloseTo(expectedPrice, 1);
     });
 
-    it('should return multiple price options', async () => {
+    it("should return multiple price options", async () => {
       const options = await dynamicPricingService.getMultiplePriceOptions(
-        'soroban-testnet',
-        100000
+        "soroban-testnet",
+        100000,
       );
 
-      expect(options).toHaveProperty('low');
-      expect(options).toHaveProperty('normal');
-      expect(options).toHaveProperty('high');
-      expect(options).toHaveProperty('critical');
+      expect(options).toHaveProperty("low");
+      expect(options).toHaveProperty("normal");
+      expect(options).toHaveProperty("high");
+      expect(options).toHaveProperty("critical");
 
       // Verify pricing hierarchy
-      expect(options.low.dynamicGasPrice).toBeLessThan(options.normal.dynamicGasPrice);
-      expect(options.normal.dynamicGasPrice).toBeLessThan(options.high.dynamicGasPrice);
-      expect(options.high.dynamicGasPrice).toBeLessThan(options.critical.dynamicGasPrice);
+      expect(options.low.dynamicGasPrice).toBeLessThan(
+        options.normal.dynamicGasPrice,
+      );
+      expect(options.normal.dynamicGasPrice).toBeLessThan(
+        options.high.dynamicGasPrice,
+      );
+      expect(options.high.dynamicGasPrice).toBeLessThan(
+        options.critical.dynamicGasPrice,
+      );
     });
 
-    it('should set correct price validity window based on volatility', async () => {
+    it("should set correct price validity window based on volatility", async () => {
       const estimate = await dynamicPricingService.estimateGasPrice(
-        'soroban-testnet',
+        "soroban-testnet",
         100000,
-        'normal'
+        "normal",
       );
 
       // Price should be valid for some time in the future
@@ -175,9 +192,9 @@ describe('Dynamic Gas Estimation Engine', () => {
     });
   });
 
-  describe('Network Monitor Service', () => {
-    it('should cache network metrics', async () => {
-      const chainId = 'soroban-testnet';
+  describe("Network Monitor Service", () => {
+    it("should cache network metrics", async () => {
+      const chainId = "soroban-testnet";
 
       const metrics1 = await networkMonitorService.getNetworkMetrics(chainId);
       const metrics2 = await networkMonitorService.getNetworkMetrics(chainId);
@@ -186,17 +203,18 @@ describe('Dynamic Gas Estimation Engine', () => {
       expect(metrics1).toBe(metrics2);
     });
 
-    it('should track congestion levels', async () => {
-      const metrics = await networkMonitorService.getNetworkMetrics('soroban-testnet');
+    it("should track congestion levels", async () => {
+      const metrics =
+        await networkMonitorService.getNetworkMetrics("soroban-testnet");
 
       expect(metrics.congestionLevel).toBeGreaterThanOrEqual(0);
       expect(metrics.congestionLevel).toBeLessThanOrEqual(100);
     });
 
-    it('should update metrics periodically', async () => {
+    it("should update metrics periodically", async () => {
       jest.useFakeTimers();
 
-      const spy = jest.spyOn(networkMonitorService, 'updateNetworkMetrics');
+      const spy = jest.spyOn(networkMonitorService, "updateNetworkMetrics");
 
       // Trigger cron manually
       await networkMonitorService.updateNetworkMetrics();
@@ -207,12 +225,13 @@ describe('Dynamic Gas Estimation Engine', () => {
     });
   });
 
-  describe('Gas Price History Service', () => {
-    it('should record price snapshots', async () => {
-      const snapshot = await networkMonitorService.getGasPriceSnapshot('soroban-testnet');
+  describe("Gas Price History Service", () => {
+    it("should record price snapshots", async () => {
+      const snapshot =
+        await networkMonitorService.getGasPriceSnapshot("soroban-testnet");
 
-      const saveSpy = jest.spyOn(repository, 'save').mockResolvedValue({
-        id: 'test-id',
+      const saveSpy = jest.spyOn(repository, "save").mockResolvedValue({
+        id: "test-id",
       } as any);
 
       await gasPriceHistoryService.recordPriceSnapshot(snapshot);
@@ -220,55 +239,52 @@ describe('Dynamic Gas Estimation Engine', () => {
       expect(saveSpy).toHaveBeenCalled();
     });
 
-    it('should detect price trends correctly', async () => {
-      const findSpy = jest
-        .spyOn(repository, 'find')
-        .mockResolvedValue(
-          Array.from({ length: 20 }, (_, i) => ({
-            id: `id-${i}`,
-            chainId: 'soroban-testnet',
-            timestamp: new Date(Date.now() - i * 3600000),
-            baseGasPrice: 1000,
-            surgeMultiplier: 1.0 + i * 0.01, // Increasing trend
-            effectiveGasPrice: (1000 * (1.0 + i * 0.01)) as any,
-            networkLoad: 30 + i,
-            memoryPoolSize: 0,
-            transactionCount: 10,
-            blockTime: 4000,
-            volatilityIndex: 10,
-            priceConfidence: 80,
-          })) as any
-        );
+    it("should detect price trends correctly", async () => {
+      const findSpy = jest.spyOn(repository, "find").mockResolvedValue(
+        Array.from({ length: 20 }, (_, i) => ({
+          id: `id-${i}`,
+          chainId: "soroban-testnet",
+          timestamp: new Date(Date.now() - i * 3600000),
+          baseGasPrice: 1000,
+          surgeMultiplier: 1.0 + i * 0.01, // Increasing trend
+          effectiveGasPrice: (1000 * (1.0 + i * 0.01)) as any,
+          networkLoad: 30 + i,
+          memoryPoolSize: 0,
+          transactionCount: 10,
+          blockTime: 4000,
+          volatilityIndex: 10,
+          priceConfidence: 80,
+        })) as any,
+      );
 
-      const trend = await gasPriceHistoryService.getPriceTrend('soroban-testnet');
+      const trend =
+        await gasPriceHistoryService.getPriceTrend("soroban-testnet");
 
-      expect(trend.trend).toBe('increasing');
+      expect(trend.trend).toBe("increasing");
       expect(trend.percentChange).toBeGreaterThan(0);
     });
 
-    it('should calculate average prices', async () => {
-      const findSpy = jest
-        .spyOn(repository, 'find')
-        .mockResolvedValue(
-          Array.from({ length: 24 }, (_, i) => ({
-            id: `id-${i}`,
-            chainId: 'soroban-testnet',
-            timestamp: new Date(Date.now() - i * 3600000),
-            baseGasPrice: 1000,
-            surgeMultiplier: 1.0,
-            effectiveGasPrice: (1000 + i * 50) as any, // Varying prices
-            networkLoad: 40,
-            memoryPoolSize: 0,
-            transactionCount: 20,
-            blockTime: 4000,
-            volatilityIndex: 15,
-            priceConfidence: 75,
-          })) as any
-        );
+    it("should calculate average prices", async () => {
+      const findSpy = jest.spyOn(repository, "find").mockResolvedValue(
+        Array.from({ length: 24 }, (_, i) => ({
+          id: `id-${i}`,
+          chainId: "soroban-testnet",
+          timestamp: new Date(Date.now() - i * 3600000),
+          baseGasPrice: 1000,
+          surgeMultiplier: 1.0,
+          effectiveGasPrice: (1000 + i * 50) as any, // Varying prices
+          networkLoad: 40,
+          memoryPoolSize: 0,
+          transactionCount: 20,
+          blockTime: 4000,
+          volatilityIndex: 15,
+          priceConfidence: 75,
+        })) as any,
+      );
 
       const stats = await gasPriceHistoryService.getAveragePriceOverPeriod(
-        'soroban-testnet',
-        24
+        "soroban-testnet",
+        24,
       );
 
       expect(stats.average).toBeGreaterThan(0);
@@ -278,54 +294,58 @@ describe('Dynamic Gas Estimation Engine', () => {
     });
   });
 
-  describe('Gas Estimation Controller', () => {
-    it('should handle estimate requests', async () => {
+  describe("Gas Estimation Controller", () => {
+    it("should handle estimate requests", async () => {
       const response = await controller.estimateGasPrice({
-        chainId: 'soroban-testnet',
+        chainId: "soroban-testnet",
         estimatedGasUnits: 100000,
-        priority: 'normal',
+        priority: "normal",
       });
 
-      expect(response).toHaveProperty('chainId');
-      expect(response).toHaveProperty('dynamicGasPrice');
-      expect(response).toHaveProperty('totalEstimatedCostXLM');
-      expect(response).toHaveProperty('expiresAt');
+      expect(response).toHaveProperty("chainId");
+      expect(response).toHaveProperty("dynamicGasPrice");
+      expect(response).toHaveProperty("totalEstimatedCostXLM");
+      expect(response).toHaveProperty("expiresAt");
     });
 
-    it('should return multiple price options', async () => {
+    it("should return multiple price options", async () => {
       const response = await controller.getMultiplePriceOptions({
-        chainId: 'soroban-testnet',
+        chainId: "soroban-testnet",
         estimatedGasUnits: 100000,
       });
 
-      expect(response).toHaveProperty('low');
-      expect(response).toHaveProperty('normal');
-      expect(response).toHaveProperty('high');
-      expect(response).toHaveProperty('critical');
+      expect(response).toHaveProperty("low");
+      expect(response).toHaveProperty("normal");
+      expect(response).toHaveProperty("high");
+      expect(response).toHaveProperty("critical");
     });
 
-    it('should provide network metrics', async () => {
-      const response = await controller.getNetworkMetrics('soroban-testnet');
+    it("should provide network metrics", async () => {
+      const response = await controller.getNetworkMetrics("soroban-testnet");
 
-      expect(response).toHaveProperty('chainId');
-      expect(response).toHaveProperty('congestionLevel');
-      expect(response).toHaveProperty('currentGasPriceSnapshot');
+      expect(response).toHaveProperty("chainId");
+      expect(response).toHaveProperty("congestionLevel");
+      expect(response).toHaveProperty("currentGasPriceSnapshot");
     });
 
-    it('should return health status', async () => {
+    it("should return health status", async () => {
       const response = await controller.health();
 
-      expect(response).toHaveProperty('status', 'healthy');
-      expect(response).toHaveProperty('supportedChains');
-      expect(response.supportedChains).toContain('soroban-mainnet');
-      expect(response.supportedChains).toContain('soroban-testnet');
+      expect(response).toHaveProperty("status", "healthy");
+      expect(response).toHaveProperty("supportedChains");
+      expect(response.supportedChains).toContain("soroban-mainnet");
+      expect(response.supportedChains).toContain("soroban-testnet");
     });
   });
 
-  describe('Integration Scenarios', () => {
-    it('should handle rapid price requests without cache thrashing', async () => {
+  describe("Integration Scenarios", () => {
+    it("should handle rapid price requests without cache thrashing", async () => {
       const promises = Array.from({ length: 100 }, () =>
-        dynamicPricingService.estimateGasPrice('soroban-testnet', 100000, 'normal')
+        dynamicPricingService.estimateGasPrice(
+          "soroban-testnet",
+          100000,
+          "normal",
+        ),
       );
 
       const results = await Promise.all(promises);
@@ -339,11 +359,11 @@ describe('Dynamic Gas Estimation Engine', () => {
       });
     });
 
-    it('should suggest optimal times with historical data', async () => {
-      const findSpy = jest.spyOn(repository, 'find').mockResolvedValue(
+    it("should suggest optimal times with historical data", async () => {
+      const findSpy = jest.spyOn(repository, "find").mockResolvedValue(
         Array.from({ length: 168 }, (_, i) => ({
           id: `id-${i}`,
-          chainId: 'soroban-testnet',
+          chainId: "soroban-testnet",
           timestamp: new Date(Date.now() - i * 3600000),
           baseGasPrice: 1000,
           surgeMultiplier: 1.0,
@@ -355,17 +375,20 @@ describe('Dynamic Gas Estimation Engine', () => {
           blockTime: 4000,
           volatilityIndex: 15,
           priceConfidence: 75,
-        })) as any
+        })) as any,
       );
 
-      const windows = await gasPriceHistoryService.getBestTimeWindowsForLowPrices(
-        'soroban-testnet',
-        3
-      );
+      const windows =
+        await gasPriceHistoryService.getBestTimeWindowsForLowPrices(
+          "soroban-testnet",
+          3,
+        );
 
       // Should identify the cheapest hours
       expect(windows.length).toBeGreaterThan(0);
-      expect(windows[0].averagePrice).toBeLessThanOrEqual(windows[windows.length - 1].averagePrice);
+      expect(windows[0].averagePrice).toBeLessThanOrEqual(
+        windows[windows.length - 1].averagePrice,
+      );
     });
   });
 });

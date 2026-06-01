@@ -55,15 +55,12 @@
       "@api/*": ["apps/api/src/*"]
     }
   },
-  "include": [
-    "apps/**/*",
-    "libs/**/*",
-    "packages/**/*"
-, "apps/api-service/src/transection/dto/.dto .ts"  ],
+  "include": ["apps/**/*", "libs/**/*", "packages/**/*"],
   "exclude": [
     "node_modules",
     "dist",
     "**/*.spec.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "apps/api-service/**"
   ]
 }

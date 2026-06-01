@@ -1,0 +1,2 @@
+pub mod external_calls_in_loops;
+pub use external_calls_in_loops::ExternalCallsInLoopsRule;

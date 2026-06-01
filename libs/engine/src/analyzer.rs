@@ -1,5 +1,5 @@
 use colored::*;
-use gasguard_rules::{RuleViolation, ViolationSeverity};
+use gasguard_rule_engine::{RuleViolation, ViolationSeverity};
 use std::fmt;
 
 pub struct ScanAnalyzer;
@@ -91,11 +91,10 @@ impl ScanAnalyzer {
 
         for violation in violations {
             match violation.severity {
-                ViolationSeverity::Error => errors.push(violation),
-                // Map High and Medium to Warnings for now
-                ViolationSeverity::High => warnings.push(violation),
-                ViolationSeverity::Medium => warnings.push(violation),
-                ViolationSeverity::Warning => warnings.push(violation),
+                ViolationSeverity::Error | ViolationSeverity::High => {
+                    errors.push(violation)
+                }
+                ViolationSeverity::Medium | ViolationSeverity::Warning => warnings.push(violation),
                 ViolationSeverity::Info => info.push(violation),
             }
         }

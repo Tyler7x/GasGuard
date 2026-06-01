@@ -1,3 +1,29 @@
+## 🚦 Multi-Chain RPC Failover System
+
+GasGuard now features a robust multi-chain RPC failover system:
+
+- **Provider Management:** Configurable list of primary, secondary, and fallback RPC endpoints per chain.
+- **Automatic Failover:** Detects failures or high latency and switches to backup providers with retry logic.
+- **Health Monitoring:** Tracks response time, error rates, and uptime for each provider. Health status is available via the `/v1/analytics/rpc-health` endpoint.
+- **Security:** All sensitive RPC URLs and API keys are managed via environment variables.
+- **Logging:** Failover events are logged for diagnostics and auditing.
+
+See the code in `apps/api/src/services/rpc-provider-manager.ts` and `apps/api/src/services/cross-chain-gas.service.ts` for implementation details.
+## 🔒 Secure RPC Provider Configuration
+
+All sensitive RPC URLs and API keys should be set via environment variables (e.g., `ETHEREUM_RPC_URL`, `POLYGON_RPC_URL`, etc.). Never commit secrets to source control. Use a `.env` file or your deployment environment's secret manager.
+
+Example `.env`:
+
+```
+ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/your-key
+POLYGON_RPC_URL=https://polygon-mainnet.infura.io/v3/your-key
+BSC_RPC_URL=https://bsc-dataseed1.binance.org
+ARBITRUM_RPC_URL=https://arb1.arbitrum.io/rpc
+OPTIMISM_RPC_URL=https://mainnet.optimism.io
+```
+
+The backend will automatically use these for primary endpoints and failover to public endpoints if needed.
 # GasGuard: Automated Optimization Suite
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -21,6 +47,7 @@ As Web3 scales, transaction costs remain a significant barrier to entry.
 * **💡 Auto-Refactor Suggestions:** Provides "Copy-Paste" ready code snippets to replace inefficient logic instantly.
 * **🤖 CI/CD Integration:** A dedicated GitHub Action that runs on every push, ensuring no "gas regressions" are introduced.
 * **📚 Educational Tooltips:** Every suggestion includes a link to documentation explaining *why* the change saves money, fostering developer growth.
+* **🧪 Rule Testing Framework:** Comprehensive testing utilities with input/output fixtures, snapshot testing, and assertion helpers for rule developers.
 
 ### 4. Roadmap for this Wave
 * **Phase 1:** Complete the Core CLI tool for local developer use (Rust/Soroban focus).
@@ -171,7 +198,42 @@ For detailed information, see:
 - [E2E Testing Documentation](./docs/E2E_TESTING.md)
 - [E2E Quick Start Guide](./docs/E2E_QUICKSTART.md)
 
-## 🚀 Getting Started
+## � Audit Logging System
+
+GasGuard includes a comprehensive audit logging system for enterprise compliance and accountability. The system tracks all critical actions including:
+
+- **API Requests**: Every endpoint access with status, latency, and requestor information
+- **Key Management**: API key creation, rotation, and revocation events
+- **Gas Transactions**: All gas transaction submissions and processing with chain context
+- **Immutable Storage**: Append-only logs with SHA256 integrity verification
+- **Enterprise Reporting**: CSV/JSON export, advanced filtering, and compliance reports
+
+### Key Features
+- ✅ Automatic HTTP request capture via interceptor
+- ✅ Multi-chain support (Ethereum, Solana, Stellar, etc.)
+- ✅ PostgreSQL storage with optimized indexing
+- ✅ RESTful API for querying and exporting logs
+- ✅ 70%+ test coverage with unit and E2E tests
+- ✅ Configurable retention policies
+
+### Access the Audit API
+
+```bash
+# Query logs with filtering
+curl "http://localhost:3000/audit/logs?eventType=APIRequest&from=2024-02-01&to=2024-02-28"
+
+# Export logs for compliance
+curl -X POST "http://localhost:3000/audit/logs/export" \
+  -H "Content-Type: application/json" \
+  -d '{"format": "csv"}' > audit-logs.csv
+```
+
+For comprehensive documentation, see:
+- [Audit Logging System Documentation](./docs/AUDIT_LOGGING_SYSTEM.md)
+- [Audit Integration Guide](./docs/AUDIT_INTEGRATION_GUIDE.md)
+- [Audit Module README](./apps/api-service/src/audit/README.md)
+
+## �🚀 Getting Started
 
 ### Prerequisites
 
