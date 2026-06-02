@@ -7,6 +7,9 @@
 pub mod schema_analyzer;
 pub mod serialization_rules;
 
+#[cfg(test)]
+pub mod tests;
+
 pub use schema_analyzer::{
     FieldDef, SchemaAnalyzer, SerializationIssue, SerializationIssueType, StructSchema,
 };
