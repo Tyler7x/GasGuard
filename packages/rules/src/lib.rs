@@ -6,6 +6,7 @@ pub mod stellar;
 pub mod optimization;
 pub mod solidity;
 pub mod security;
+pub mod auditability;
 
 // Explicitly export core types to avoid ambiguity
 pub use rule_engine::{Rule, RuleEngine, RuleViolation, ViolationSeverity, extract_struct_fields, find_variable_usage};
